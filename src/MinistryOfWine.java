@@ -85,7 +85,7 @@ public class MinistryOfWine extends PollingScript<ClientContext>
             case Filling:
                 //-FillJugsWithWater
             	final Widgets widgets = ctx.widgets;
-            	final Component FILL_JUGS = ;
+            	final Component FILL_JUGS = 
             	for (final Item item : ctx.backpack.select().id(jugId))
             	{
             		item.click();
