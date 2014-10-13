@@ -61,7 +61,7 @@ public class MinistryOfWine extends PollingScript<ClientContext>
             	while (ctx.backpack.select().id(wineId).count() != 0) {
 	        		while (ctx.players.local().animation() == 829) Condition.sleep(100);
 	        		if (ctx.players.local().animation() != 829) ctx.backpack.select().id(wineId).poll().interact("Drink");
-	        		Condition.sleep(100);
+	        		Condition.sleep(170);
 	        		ctx.input.move(ctx.backpack.select().id(wineId).poll().nextPoint());
             	}
         		if (ctx.backpack.select().id(wineId).count() == 0) currentstate = State.WalkToFountain;
@@ -70,10 +70,9 @@ public class MinistryOfWine extends PollingScript<ClientContext>
         	
             case WalkToFountain:
             	System.out.println("State: Fountain");
-            	toFountain.traverse();
+            	if (!ctx.players.local().inMotion())toFountain.traverse();
             	
             	//if at fountain:
-            	System.out.println(ctx.players.local().tile().distanceTo(toFountain.end()));
             	if(ctx.players.local().tile().distanceTo(toFountain.end()) < 2)
             	{
             		//Fill Jugs
@@ -85,21 +84,18 @@ public class MinistryOfWine extends PollingScript<ClientContext>
                 //-FillJugsWithWater
             	final Component FILL_JUGS = ctx.widgets.component(1370, 38);
             	final Component CANCEL_FILL = ctx.widgets.component(1251, 49);
-            	for (final Item item : ctx.backpack.select().id(jugId))
-            	{
-            		if (!ctx.backpack.itemSelected() && ctx.players.local().animation() != 829) 
-        			{
-            			item.click();
-	            		Condition.sleep(Random.nextInt(100, 200));
-	        			fountain.interact("Use", "Jug -> Fountain");
-        			}
-        			Condition.sleep(Random.nextInt(300, 670));
-        			if (FILL_JUGS.valid()) FILL_JUGS.click();
-        			if (ctx.players.local().animation() == 829) Condition.sleep(Random.nextInt(800, 1200));
-        			while (CANCEL_FILL.valid()) Condition.sleep(500);
-        			
-        			if (ctx.backpack.select().id(jugId).count() == 0) currentstate = State.Start;
-            	}
+            	ctx.backpack.select().poll().interact("Use");
+        		Condition.sleep(Random.nextInt(100, 200));
+    			fountain.interact("Use", "Jug -> Fountain");
+    			Condition.sleep(1500);
+    			if (FILL_JUGS.valid()) FILL_JUGS.click();
+    			while (ctx.players.local().animation() == 829) Condition.sleep(Random.nextInt(800, 1200));
+    			while (CANCEL_FILL.valid()) Condition.sleep(500);
+    			if (ctx.backpack.select().id(jugId).count() == 0) {
+    				currentstate = State.Start;
+    				break;
+    			}
+            	
             	
             	//Set state to start
             	break;
