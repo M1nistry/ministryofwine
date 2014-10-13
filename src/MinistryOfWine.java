@@ -6,7 +6,6 @@ import org.powerbot.script.Tile;
 import org.powerbot.script.rt6.GameObject;
 import org.powerbot.script.PollingScript;
 import org.powerbot.script.Condition;
-import org.powerbot.script.Input;
 
 @Script.Manifest(name = "MinistryOfWine", description = "Drinks Jugs of Wine and then fills them with water for a profit", properties = "client=6; topic=0;")
 
@@ -31,7 +30,7 @@ public class MinistryOfWine extends PollingScript<ClientContext>
             	//-WalkToBank
             	System.out.println("State: Start");
             	//if at bank:
-            	if(ctx.players.local().tile().distanceTo(toBank.end()) < 1.1)
+            	if(ctx.players.local().tile().distanceTo(toBank.end()) < 2)
             	{
             		//Open Bank
             		currentstate = State.Banking;
@@ -59,12 +58,12 @@ public class MinistryOfWine extends PollingScript<ClientContext>
         	
             case Drinking:
             	System.out.println("State: Drinking");
-            	
-        		while (ctx.players.local().animation() == 829) Condition.sleep(100);
-        		if (ctx.players.local().animation() != 829) ctx.backpack.select().id(wineId).poll().interact("Drink");
-        		Condition.sleep(200);
-        		ctx.input.move(ctx.backpack.select().id(wineId).poll().nextPoint());
-        		//Condition.sleep(Random.nextInt(980, 1020));
+            	while (ctx.backpack.select().id(wineId).count() != 0) {
+	        		while (ctx.players.local().animation() == 829) Condition.sleep(100);
+	        		if (ctx.players.local().animation() != 829) ctx.backpack.select().id(wineId).poll().interact("Drink");
+	        		Condition.sleep(100);
+	        		ctx.input.move(ctx.backpack.select().id(wineId).poll().nextPoint());
+            	}
         		if (ctx.backpack.select().id(wineId).count() == 0) currentstate = State.WalkToFountain;
             	
             	break;
@@ -84,14 +83,22 @@ public class MinistryOfWine extends PollingScript<ClientContext>
         	
             case Filling:
                 //-FillJugsWithWater
-            	final Widgets widgets = ctx.widgets;
-            	final Component FILL_JUGS = 
+            	final Component FILL_JUGS = ctx.widgets.component(1370, 38);
+            	final Component CANCEL_FILL = ctx.widgets.component(1251, 49);
             	for (final Item item : ctx.backpack.select().id(jugId))
             	{
-            		item.click();
-            		Condition.sleep(Random.nextInt(100, 200));
-        			fountain.interact("Use", "Jug -> Fountain");
+            		if (!ctx.backpack.itemSelected() && ctx.players.local().animation() != 829) 
+        			{
+            			item.click();
+	            		Condition.sleep(Random.nextInt(100, 200));
+	        			fountain.interact("Use", "Jug -> Fountain");
+        			}
+        			Condition.sleep(Random.nextInt(300, 670));
+        			if (FILL_JUGS.valid()) FILL_JUGS.click();
+        			if (ctx.players.local().animation() == 829) Condition.sleep(Random.nextInt(800, 1200));
+        			while (CANCEL_FILL.valid()) Condition.sleep(500);
         			
+        			if (ctx.backpack.select().id(jugId).count() == 0) currentstate = State.Start;
             	}
             	
             	//Set state to start
