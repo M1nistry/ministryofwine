@@ -1,19 +1,21 @@
-import org.powerbot.script.rt6.*;
-import org.powerbot.script.rt6.Widgets;
-import org.powerbot.script.Script;
-import org.powerbot.script.Random;
-import org.powerbot.script.Tile;
-import org.powerbot.script.rt6.GameObject;
-import org.powerbot.script.PollingScript;
 import org.powerbot.script.Condition;
+import org.powerbot.script.PollingScript;
+import org.powerbot.script.Random;
+import org.powerbot.script.Script;
+import org.powerbot.script.Tile;
+import org.powerbot.script.rt6.ClientContext;
+import org.powerbot.script.rt6.Component;
+import org.powerbot.script.rt6.GameObject;
+import org.powerbot.script.rt6.TilePath;
 
 @Script.Manifest(name = "MinistryOfWine", description = "Drinks Jugs of Wine and then fills them with water for a profit", properties = "client=6; topic=0;")
 
 public class MinistryOfWine extends PollingScript<ClientContext>
 {
-	private static State currentstate = State.WalkToBank;
+	private static State currentstate = State.FindState;
     private int bankIds[] = {3416, 3293};
     private int jugId = 1935, wineId = 1993, waterJugId = 1937, fountainId = 2771;
+    
     private final GameObject fountain = ctx.objects.select().id(fountainId).nearest().poll();
     private final GameObject bankBooth = ctx.objects.select().id(bankIds).nearest().poll();   
     
@@ -41,41 +43,34 @@ public class MinistryOfWine extends PollingScript<ClientContext>
             	Filling();
             	break;
         	default:
-        		WalkToBank();
+        		FindState();
         		break;
         }
-    }
-
-    private enum State
-    { 
-    	FindState, WalkToBank, Banking, Drinking, WalkToFountain, Filling
     }
     
     private void FindState()
     {
-    	//Will Replace Start
+    	//if Inventory Empty?
+    	currentstate = State.WalkToBank;
     	
-    	//Inventory Empty?
-    	//-Walk to bank
+    	//if Inventory Full of Wine?
+    	//currentstate = State.Drinking;
     	
-    	//Inventory Full of Wine?
-    	//-Drink Wine
+    	//if Inventory Full of Empty Jugs?
+    	//currentstate = State.WalkToFountain;
     	
-    	//Inventory Full of Empty Jugs?
-    	//-Walk to Fountain
+    	//if Inventory Full of Water Jugs?
+    	//currentstate = State.Filling;
     	
-    	//Inventory Full of Water Jugs?
-    	//-Walk to Bank
+    	//if Unsure of Current State Assume Start
+    	//currentstate = State.WalkToBank;
     }
+    
     private void WalkToBank()
     {
-    	//-WalkToBank
-    	System.out.println("State: Start");
-    	//if at bank:
     	if(ctx.players.local().tile().distanceTo(toBank.end()) < 2)
     	{
-    		//Open Bank
-    		currentstate = State.Banking;
+    		currentstate = State.Banking; //Arrived at Bank
     	}
     	else
     	{
@@ -101,33 +96,27 @@ public class MinistryOfWine extends PollingScript<ClientContext>
     
     private void Drinking()
     {
-    	System.out.println("State: Drinking");
     	while (ctx.backpack.select().id(wineId).count() != 0) {
     		while (ctx.players.local().animation() == 829) Condition.sleep(100);
     		if (ctx.players.local().animation() != 829) ctx.backpack.select().id(wineId).poll().interact("Drink");
     		Condition.sleep(170);
     		ctx.input.move(ctx.backpack.select().id(wineId).poll().nextPoint());
     	}
-		if (ctx.backpack.select().id(wineId).count() == 0) currentstate = State.WalkToFountain;
-    	
+		if (ctx.backpack.select().id(wineId).count() == 0) currentstate = State.WalkToFountain; //Done Drinking
     }
     
     private void WalkToFountain()
     {
-    	System.out.println("State: Fountain");
-    	if (!ctx.players.local().inMotion())toFountain.traverse();
+    	if (!ctx.players.local().inMotion()) toFountain.traverse();
     	
-    	//if at fountain:
     	if(ctx.players.local().tile().distanceTo(toFountain.end()) < 2)
     	{
-    		//Fill Jugs
-    		currentstate = State.Filling;
+    		currentstate = State.Filling; //Arrived at Fountain
     	}
     }
     
     private void Filling()
     {
-        //-FillJugsWithWater
     	final Component FILL_JUGS = ctx.widgets.component(1370, 38);
     	final Component CANCEL_FILL = ctx.widgets.component(1251, 49);
     	ctx.backpack.select().poll().interact("Use");
@@ -141,6 +130,11 @@ public class MinistryOfWine extends PollingScript<ClientContext>
 			currentstate = State.WalkToBank;
 			return;
 		}
-    } 
+    }
+    
+    private enum State
+    { 
+    	FindState, WalkToBank, Banking, Drinking, WalkToFountain, Filling
+    }
 }
 
