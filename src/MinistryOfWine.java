@@ -53,24 +53,31 @@ public class MinistryOfWine extends PollingScript<ClientContext>
     	//if Inventory Empty?
     	currentstate = State.WalkToBank;
     	
-    	//if Inventory Full of Wine?
-    	//currentstate = State.Drinking;
+    	if (ctx.backpack.select().id(wineId).count() > 0 && ctx.players.local().tile().distanceTo(toBank.end()) < 2)
+    	{
+    		currentstate = State.Drinking;
+    	}
     	
-    	//if Inventory Full of Empty Jugs?
-    	//currentstate = State.WalkToFountain;
+    	if (ctx.backpack.select().id(jugId).count() > 0 && ctx.backpack.select().id(wineId).count() == 0) 
+    	{
+    		currentstate = State.WalkToFountain;
+    	}
     	
-    	//if Inventory Full of Water Jugs?
-    	//currentstate = State.Filling;
-    	
-    	//if Unsure of Current State Assume Start
-    	//currentstate = State.WalkToBank;
+    	if (ctx.backpack.select().id(jugId).count() > 0 && ctx.players.local().tile().distanceTo(toFountain.end()) < 2) 
+    	{
+    		currentstate = State.Filling;
+    	}
     }
     
+    /** WalkToBank
+     *  Traverses via the toBank TilePath to the bank. 
+     *  Once the player is within 2 tiles from the bank, the next state is called.
+     */
     private void WalkToBank()
     {
     	if(ctx.players.local().tile().distanceTo(toBank.end()) < 2)
     	{
-    		currentstate = State.Banking; //Arrived at Bank
+    		currentstate = State.Banking;
     	}
     	else
     	{
@@ -78,11 +85,14 @@ public class MinistryOfWine extends PollingScript<ClientContext>
     	}
     }
     
+    /** Banking
+     *  Opens the bank, clears the inventory and withdraws a full inventory of wines.
+     *  Once the inventory contains at least 1 wine, the next state is called.
+     */
     private void Banking()
     {
-    	System.out.println("State: Banking");
-    	ctx.bank.open();
-        ctx.bank.depositInventory();
+		ctx.bank.open();
+    	ctx.bank.depositInventory();
         if (ctx.backpack.select().count() == 0)
         {
         	ctx.bank.withdraw(wineId, 28);
@@ -94,13 +104,18 @@ public class MinistryOfWine extends PollingScript<ClientContext>
     	}
     }
     
+    /** Drinking
+     *  
+     */
     private void Drinking()
     {
-    	while (ctx.backpack.select().id(wineId).count() != 0) {
+    	while (ctx.backpack.select().id(wineId).count() != 0) 
+    	{
     		while (ctx.players.local().animation() == 829) Condition.sleep(100);
     		if (ctx.players.local().animation() != 829) ctx.backpack.select().id(wineId).poll().interact("Drink");
-    		Condition.sleep(170);
+    		Condition.sleep(180);
     		ctx.input.move(ctx.backpack.select().id(wineId).poll().nextPoint());
+    		   		
     	}
 		if (ctx.backpack.select().id(wineId).count() == 0) currentstate = State.WalkToFountain; //Done Drinking
     }
@@ -111,6 +126,7 @@ public class MinistryOfWine extends PollingScript<ClientContext>
     	
     	if(ctx.players.local().tile().distanceTo(toFountain.end()) < 2)
     	{
+    		ctx.camera.turnTo(fountain);
     		currentstate = State.Filling; //Arrived at Fountain
     	}
     }
@@ -119,13 +135,20 @@ public class MinistryOfWine extends PollingScript<ClientContext>
     {
     	final Component FILL_JUGS = ctx.widgets.component(1370, 38);
     	final Component CANCEL_FILL = ctx.widgets.component(1251, 49);
-    	ctx.backpack.select().poll().interact("Use");
+    	ctx.backpack.select().id(jugId).poll().interact("Use");
 		Condition.sleep(Random.nextInt(100, 200));
 		fountain.interact("Use", "Jug -> Fountain");
-		Condition.sleep(1500);
-		if (FILL_JUGS.valid()) FILL_JUGS.click();
-		while (ctx.players.local().animation() == 829) Condition.sleep(Random.nextInt(800, 1200));
-		while (CANCEL_FILL.valid()) Condition.sleep(500);
+		Condition.sleep(1000);
+		if (FILL_JUGS.valid()) 
+		{
+			FILL_JUGS.click();
+			Condition.sleep(1500);
+		}
+		while (ctx.players.local().animation() == 829 || CANCEL_FILL.valid()) 
+		{
+			ctx.input.move(Random.nextInt(400, 1000), Random.nextInt(150, 740));
+			Condition.sleep(Random.nextInt(800, 1200));
+		}
 		if (ctx.backpack.select().id(jugId).count() == 0) {
 			currentstate = State.WalkToBank;
 			return;
